@@ -1,0 +1,24 @@
+[Unit]
+Description=TRM Cassino Program
+After=graphical.target network-online.target
+Requires=graphical.target network-online.target
+
+[Service]
+Type=simple
+User=pc1
+Restart=on-failure
+RestartSec=180
+ExecStartPre=/bin/sleep 10
+ExecStartPre=/usr/bin/xhost +SI:localuser:pc1
+ExecStart=/usr/local/bin/terminal
+WorkingDirectory=/home/pc1/Downloads
+Environment=DISPLAY=:0
+Environment=XAUTHORITY=/home/pc1/.Xauthority
+Environment=PULSE_SERVER=unix:/run/user/1000/pulse/native
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
+StandardOutput=append:/home/pc1/Downloads/trm_cassino.out
+StandardError=append:/home/pc1/Downloads/trm_cassino.err
+
+[Install]
+WantedBy=graphical.target

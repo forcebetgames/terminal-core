@@ -1,0 +1,12 @@
+#!/bin/sh
+set -e
+
+# Only attempt systemd actions if systemctl exists; never fail install on service ops
+if command -v systemctl >/dev/null 2>&1; then
+  systemctl daemon-reload || true
+  systemctl enable terminal.service || true
+  # Try restart if already present; fall back to start; never abort install
+  systemctl restart terminal.service || systemctl start terminal.service || true
+fi
+
+exit 0

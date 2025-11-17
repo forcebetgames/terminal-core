@@ -1,0 +1,49 @@
+# Stage 1: Use the official Go image to build the binary
+FROM golang:1.22 
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy Go modules files to cache dependencies
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy the rest of the source code
+COPY . .
+
+# Update package list and add necessary repositories for GCC
+RUN apt-get update && apt-get install -y software-properties-common
+#RUN add-apt-repository ppa:ubuntu-toolchain-r/test && apt-get update
+
+# Install required dependencies and handle broken packages
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
+    gcc-10 \
+    g++-10 \
+    gcc-multilib \
+    gcc-x86-64-linux-gnu \
+    libc6-dev \
+    libc6-dev-amd64-cross \
+    libx11-dev \
+    libx11-xcb-dev \
+    xorg-dev \
+    libxtst-dev \
+    xsel \
+    xclip \
+    libpng++-dev \
+    xcb \
+    libxcb-xkb-dev \
+    libxkbcommon-x11-dev \
+    libxkbcommon-dev \
+    build-essential \
+    pkg-config \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Enable CGO and set the environment for 64-bit Linux
+ENV CGO_ENABLED=1 \
+    GOOS=linux \
+    GOARCH=amd64 \
+    CC=gcc
+
+# Build the Go binary
+RUN go build -o terminal main.go

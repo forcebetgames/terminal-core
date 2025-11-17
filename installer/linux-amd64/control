@@ -1,0 +1,9 @@
+Package: terminal
+Version: 1.0.0
+Section: base
+Priority: optional
+Architecture: amd64
+Maintainer: Terminal <terminal@grupo.com>
+Depends: numlockx, xclip
+Description: TRM Cassino Terminal
+ A secure and interactive terminal app.

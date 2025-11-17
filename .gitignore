@@ -1,0 +1,5 @@
+*.env
+terminal
+terminal.exe
+.DS_Store
+.vscode/

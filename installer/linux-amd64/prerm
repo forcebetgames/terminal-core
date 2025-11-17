@@ -1,0 +1,11 @@
+#!/bin/sh
+set -e
+
+# Only try systemd if available; never fail if the unit isn't loaded/running
+if command -v systemctl >/dev/null 2>&1; then
+  systemctl stop terminal.service || true
+  systemctl disable terminal.service || true
+  systemctl daemon-reload || true
+fi
+
+exit 0

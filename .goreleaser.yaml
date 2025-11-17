@@ -1,0 +1,27 @@
+project_name: terminal
+
+builds:
+  - id: terminal
+    main: ./main.go
+    binary: terminal-{{ .Env.ENV_TARGET }}
+    output: .
+    env:
+      - CGO_ENABLED=1
+      - CC=x86_64-linux-gnu-gcc
+    goos:
+      - linux
+    goarch:
+      - amd64
+
+
+archives:
+  - format: tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - terminal-{{ .Env.ENV_TARGET }}
+
+release:
+  github:
+
+checksum:
+  name_template: 'checksums.txt'
