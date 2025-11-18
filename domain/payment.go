@@ -2,9 +2,9 @@ package domain
 
 import (
 	"fmt"
+	"sync"
 	"terminal/domain/keyboard"
-
-	hook "github.com/robotn/gohook"
+	"time"
 )
 
 // PaymentCash struct to handle cash payments.
@@ -12,6 +12,8 @@ type PaymentCash struct {
 	Callback            func(brlCount int)
 	IntervalBetweenNote int // Timeout in milliseconds between consecutive key-ups (after which the callback is called)
 	InputHandler        keyboard.InputHandler
+	lastEventTime       map[string]time.Time
+	mu                  sync.Mutex
 }
 
 // NewPaymentCash creates a new instance of PaymentCash with the given callback.
@@ -20,6 +22,7 @@ func NewPaymentCash(callback func(brlCount int), inputHandler keyboard.InputHand
 		IntervalBetweenNote: 1000, // Timeout in milliseconds after which the callback is triggered
 		Callback:            callback,
 		InputHandler:        inputHandler,
+		lastEventTime:       make(map[string]time.Time),
 	}
 }
 
@@ -41,35 +44,37 @@ func (p *PaymentCash) Start() {
 }
 
 func (p *PaymentCash) ListenNote(amount int, keys ...string) {
-	for _, keybind := range keys {
-		// Captura o keybind no escopo local
-		currentKey := keybind
+	// Register callback for all the keys
+	p.InputHandler.RegisterKeyDown(keys, func(e keyboard.Event) {
+		currentKey := e.Key
+		currentAmount := amount
 
-		hook.Register(hook.KeyDown, []string{currentKey}, func(e hook.Event) {
-			// Debug detalhado
-			rawcode := e.Rawcode
-			keychar := hook.RawcodetoKeychar(rawcode)
+		fmt.Println("====================================")
+		fmt.Printf("🔍 DEBUG - Tecla capturada:\n")
+		fmt.Printf("   Tecla: %s\n", currentKey)
+		fmt.Printf("   Rawcode: %d\n", e.Rawcode)
+		fmt.Printf("   Valor: R$ %d\n", currentAmount)
 
+		// Debounce - Prevenir múltiplos disparos em curto período
+		p.mu.Lock()
+		lastTime, exists := p.lastEventTime[currentKey]
+		now := time.Now()
+		if exists && now.Sub(lastTime) < 200*time.Millisecond {
+			p.mu.Unlock()
+			fmt.Printf("   ⏱️  REJEITADO: Debounce ativo (última tecla há %dms)\n", now.Sub(lastTime).Milliseconds())
 			fmt.Println("====================================")
-			fmt.Printf("🔍 DEBUG - Tecla capturada:\n")
-			fmt.Printf("   Keybind esperado: %s\n", currentKey)
-			fmt.Printf("   Rawcode: %d\n", rawcode)
-			fmt.Printf("   Keychar: %s\n", keychar)
-			fmt.Printf("   Valor: R$ %d\n", amount)
+			return
+		}
+		p.lastEventTime[currentKey] = now
+		p.mu.Unlock()
 
-			// Verifica se é a tecla correta (mais permissivo)
-			if keychar != "" && keychar != currentKey {
-				fmt.Printf("   ⚠️  Keychar diferente do esperado, mas processando mesmo assim...\n")
-			}
+		fmt.Println("====================================")
+		fmt.Printf("✅ VÁLIDO - Inserindo R$ %d...\n", currentAmount)
 
-			fmt.Println("====================================")
-			fmt.Printf("💵 Inserindo R$ %d...\n", amount)
-
-			if p.Callback != nil {
-				go p.Callback(amount)
-			}
-		})
-	}
+		if p.Callback != nil {
+			go p.Callback(currentAmount)
+		}
+	})
 
 	fmt.Printf("   ✅ Registrado: R$ %d → teclas %v\n", amount, keys)
 }

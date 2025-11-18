@@ -15,4 +15,5 @@ type Event struct {
 type InputHandler interface {
 	RegisterKeyDown(keys []string, callback func(e Event))
 	SimulateKeyPress(key string)
+	StartListening()
 }

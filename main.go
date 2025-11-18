@@ -10,8 +10,10 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"terminal/domain"
 	"terminal/domain/command"
@@ -21,7 +23,6 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 
 	"github.com/joho/godotenv"
-	hook "github.com/robotn/gohook"
 )
 
 //go:embed .env
@@ -29,20 +30,125 @@ var embeddedEnv string
 
 var safe_url = "https://google.com"
 
-func init() {
-	// Start the global hook listener
-	go func() {
-		fmt.Println("Initializing hook system...")
-		s := hook.Start()
-		<-hook.Process(s) // Keep the hook system running
-	}()
+// detectScreenOrientation detecta automaticamente a orientação da tela
+func detectScreenOrientation() string {
+	// 1. Verifica argumento de linha de comando
+	if len(os.Args) > 1 {
+		arg := strings.ToLower(os.Args[1])
+		if arg == "horizontal" || arg == "landscape" || arg == "-h" || arg == "--horizontal" {
+			return "landscape"
+		}
+		if arg == "vertical" || arg == "portrait" || arg == "-v" || arg == "--vertical" {
+			return "portrait"
+		}
+	}
+
+	// 2. Verifica variável de ambiente SCREEN_ORIENTATION
+	if orientation := os.Getenv("SCREEN_ORIENTATION"); orientation != "" {
+		return orientation
+	}
+
+	// 3. Tenta detectar automaticamente usando xrandr (X11/Wayland)
+	cmd := exec.Command("xrandr", "--current")
+	output, err := cmd.Output()
+	if err == nil {
+		lines := strings.Split(string(output), "\n")
+
+		// Estrutura para armazenar informações dos monitores
+		type Monitor struct {
+			name   string
+			width  int
+			height int
+			area   int
+		}
+
+		var monitors []Monitor
+
+		// Coleta informações de todos os monitores conectados
+		for _, line := range lines {
+			if strings.Contains(line, " connected") {
+				parts := strings.Fields(line)
+				monitorName := parts[0]
+
+				for _, part := range parts {
+					if strings.Contains(part, "x") && (strings.Contains(part, "+") || len(strings.Split(part, "x")) == 2) {
+						resolution := strings.Split(part, "+")[0]
+						dims := strings.Split(resolution, "x")
+						if len(dims) == 2 {
+							width, errW := strconv.Atoi(dims[0])
+							height, errH := strconv.Atoi(dims[1])
+							if errW == nil && errH == nil && width > 0 && height > 0 {
+								monitors = append(monitors, Monitor{
+									name:   monitorName,
+									width:  width,
+									height: height,
+									area:   width * height,
+								})
+								break
+							}
+						}
+					}
+				}
+			}
+		}
+
+		// Se encontrou monitores, seleciona o de MAIOR resolução (área)
+		if len(monitors) > 0 {
+			largest := monitors[0]
+			for _, m := range monitors {
+				if m.area > largest.area {
+					largest = m
+				}
+			}
+
+			if len(monitors) > 1 {
+				fmt.Printf("🖥️  Múltiplos monitores detectados (%d)\n", len(monitors))
+				fmt.Printf("📺 Usando monitor: %s (%dx%d - maior resolução)\n", largest.name, largest.width, largest.height)
+			}
+
+			if largest.width > largest.height {
+				fmt.Printf("🔍 Resolução detectada: %dx%d → HORIZONTAL\n", largest.width, largest.height)
+				return "landscape"
+			} else {
+				fmt.Printf("🔍 Resolução detectada: %dx%d → VERTICAL\n", largest.width, largest.height)
+				return "portrait"
+			}
+		}
+	}
+
+	// 4. Fallback: Tenta detectar via /sys/class/graphics (Wayland/console)
+	fbOutput, fbErr := exec.Command("cat", "/sys/class/graphics/fb0/virtual_size").Output()
+	if fbErr == nil {
+		parts := strings.Split(strings.TrimSpace(string(fbOutput)), ",")
+		if len(parts) == 2 {
+			width, _ := strconv.Atoi(parts[0])
+			height, _ := strconv.Atoi(parts[1])
+			if width > height {
+				fmt.Printf("🔍 Resolução detectada (fb0): %dx%d → HORIZONTAL\n", width, height)
+				return "landscape"
+			} else {
+				fmt.Printf("🔍 Resolução detectada (fb0): %dx%d → VERTICAL\n", width, height)
+				return "portrait"
+			}
+		}
+	}
+
+	// 5. Fallback final: portrait (vertical)
+	fmt.Println("⚠️  Não foi possível detectar orientação, usando padrão: VERTICAL")
+	return "portrait"
 }
 
 func main() {
 
 	globalCTX := context.TODO()
 
+	fmt.Println("====================================")
+	fmt.Println("🎮 TERMINAL DE JOGOS - FORCEBET")
+	fmt.Println("====================================")
+	fmt.Println("")
 	fmt.Println("Iniciando o sistema...")
+
+	// Carrega .env PRIMEIRO
 	envMap, errEnv := godotenv.Unmarshal(embeddedEnv)
 	if errEnv != nil {
 		log.Printf("Error loading .env file: %s", errEnv)
@@ -54,6 +160,20 @@ func main() {
 	for key, value := range envMap {
 		os.Setenv(key, value)
 	}
+
+	// DEPOIS detecta orientação (sobrescreve .env se necessário)
+	orientation := detectScreenOrientation()
+	os.Setenv("SCREEN_ORIENTATION", orientation)
+
+	if orientation == "landscape" {
+		fmt.Println("📐 Modo: HORIZONTAL (Landscape) - 1920x1080")
+		fmt.Println("🎯 Jogo: Empire 🏛️")
+	} else {
+		fmt.Println("📐 Modo: VERTICAL (Portrait) - 1080x1920")
+		fmt.Println("🎯 Jogo: Tigrinho 🐯")
+	}
+	fmt.Println("")
+	fmt.Println("====================================")
 
 	///////////////////////////////////////////////////////
 	trmEnvType := "dev"
@@ -150,15 +270,25 @@ func main() {
 
 	fmt.Println("====================================")
 	fmt.Println("✅ Navegador aberto com sucesso!")
+	fmt.Println("====================================")
+	fmt.Println("🎹 Inicializando sistema de input...")
+
+	inputHandler, err := keyboard.NewInputHandler()
+	if err != nil {
+		log.Printf("❌ Erro ao inicializar input handler: %v", err)
+		fmt.Println("💡 Dica: Se estiver usando Wayland, execute com sudo!")
+		fmt.Scanln()
+		os.Exit(1)
+	}
+
+	fmt.Println("====================================")
 	fmt.Println("📌 Registrando atalhos de teclado...")
 	fmt.Println("====================================")
 
-	command.DepositModal(ctx)
-	command.GotoHome(ctx)
-	// command.ResetSession(ctx)
-
-	command.ModalSaque(ctx)
-	command.CloseProgram(ctx, cancelBrowser)
+	command.DepositModal(ctx, inputHandler)
+	command.GotoHome(ctx, inputHandler)
+	command.ModalSaque(ctx, inputHandler)
+	command.CloseProgram(ctx, cancelBrowser, inputHandler)
 
 	if terminal.GetSession() == "PIX" {
 		terminal.Command.SetNumLock(true)
@@ -226,12 +356,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	inputHandler := keyboard.NewRealInputHandler()
-
 	fmt.Println("✅ Pusher conectado!")
 	fmt.Println("====================================")
 
 	payment := domain.NewPaymentCash(func(brlCount int) {
+		fmt.Println("====================================")
+		fmt.Printf("🚀 CALLBACK EXECUTADO - Valor: R$ %d\n", brlCount)
+		fmt.Println("====================================")
+
 		data := map[string]interface{}{
 			"amount":     brlCount,
 			"notas":      map[string]int{strconv.Itoa(brlCount): 1},
@@ -240,12 +372,18 @@ func main() {
 
 		jsonData, err := json.Marshal(data)
 		if err != nil {
-			fmt.Println("#1 - Erro ao enviar a nota ao sistema")
+			fmt.Printf("❌ #1 - Erro ao marshalar JSON: %v\n", err)
+			return
 		}
 
-		req, err := http.NewRequest("POST", fmt.Sprintf("%s/api/hooks/pnr/deposit_cash", terminal.BaseURL), bytes.NewBuffer(jsonData))
+		postURL := fmt.Sprintf("%s/api/hooks/pnr/deposit_cash", terminal.BaseURL)
+		fmt.Printf("📡 Enviando POST para: %s\n", postURL)
+		fmt.Printf("📦 Payload: %s\n", string(jsonData))
+
+		req, err := http.NewRequest("POST", postURL, bytes.NewBuffer(jsonData))
 		if err != nil {
-			fmt.Println("#2 - Erro ao enviar a nota ao sistema")
+			fmt.Printf("❌ #2 - Erro ao criar requisição: %v\n", err)
+			return
 		}
 
 		req.Header.Set("Content-Type", "application/json")
@@ -253,22 +391,34 @@ func main() {
 		client := &http.Client{}
 		resp, err := client.Do(req)
 		if err != nil {
-			fmt.Println("#3 - Erro ao enviar a nota ao sistema")
+			fmt.Printf("❌ #3 - Erro ao executar requisição: %v\n", err)
+			return
 		}
+		defer resp.Body.Close()
 
 		respBody, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			log.Println("#B - Erro ao enviar a nota ao sistema")
+			fmt.Printf("❌ #B - Erro ao ler resposta: %v\n", err)
+			return
 		}
+
+		fmt.Printf("📥 Status HTTP: %d\n", resp.StatusCode)
+		fmt.Printf("📥 Resposta do servidor: %s\n", string(respBody))
 
 		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-			fmt.Println("#4 - Erro ao enviar a nota ao sistema", respBody)
+			fmt.Printf("❌ #4 - Resposta de erro do servidor (status %d)\n", resp.StatusCode)
+			fmt.Printf("   Corpo: %s\n", string(respBody))
+		} else {
+			fmt.Println("✅ Pagamento enviado com sucesso!")
 		}
 
-		defer resp.Body.Close()
+		fmt.Println("====================================")
 
 	}, inputHandler)
 	payment.Start()
+
+	// Start listening for keyboard events
+	inputHandler.StartListening()
 
 	fmt.Println("====================================")
 	fmt.Println("")
