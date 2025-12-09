@@ -294,8 +294,8 @@ github.com/pusher/pusher-http-go/v5 v5.1.1 h1:ZLUGdLA8yXMvByafIkS47nvuXOHrYmlh4b
 github.com/pusher/pusher-http-go/v5 v5.1.1/go.mod h1:Ibji4SGoUDtOy7CVRhCiEpgy+n5Xv6hSL/QqYOhmWW8=
 github.com/rainycape/memcache v0.0.0-20150622160815-1031fa0ce2f2/go.mod h1:7tZKcyumwBO6qip7RNQ5r77yrssm9bfCowcLEBcU5IA=
 github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a/go.mod h1:bCqnVzQkZxMG4s8nGwiZ5l3QUCyqpo9Y+/ZMZ9VjZe4=
-github.com/robotn/gohook v0.42.2 h1:AI9OVh5o59c76jp9Xcc4NpIvze2YeKX1Rn8JvflAUXY=
-github.com/robotn/gohook v0.42.2/go.mod h1:PYgH0f1EaxhCvNSqIVTfo+SIUh1MrM2Uhe2w7SvFJDE=
+github.com/robotn/gohook v0.42.3 h1:6Pm6q4gOn+CNjDpiBTWqPwbCJF4+0WD/Fdizlztua2U=
+github.com/robotn/gohook v0.42.3/go.mod h1:PYgH0f1EaxhCvNSqIVTfo+SIUh1MrM2Uhe2w7SvFJDE=
 github.com/rogpeppe/fastuuid v0.0.0-20150106093220-6724a57986af/go.mod h1:XWv6SoW27p1b0cqNHllgS5HIMJraePCO15w5zCzIWYg=
 github.com/russross/blackfriday v0.0.0-20170610170232-067529f716f4/go.mod h1:JO/DiYxRf+HjHt06OyowR9PTA263kcR/rfWxYHBV53g=
 github.com/russross/blackfriday/v2 v2.0.1/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=

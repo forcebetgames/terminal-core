@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"terminal/logger"
 
 	"github.com/gorilla/websocket"
 	"github.com/pusher/pusher-http-go/v5"
@@ -72,9 +73,9 @@ func (p *Pusher) Send(terminal *Terminal, event PusherEvent, message string) err
 func (p *Pusher) Read(terminal *Terminal) {
 	channel, chanelErr := p.client.Channel(terminal.Slug(), pusher.ChannelParams{})
 	if chanelErr != nil {
-		fmt.Println("Falha ao ler socket")
+		logger.Println("Falha ao ler socket")
 	}
-	fmt.Println("channel", channel)
+	logger.Println("channel", channel)
 }
 
 func (p *Pusher) Listen(terminal *Terminal, eventName PusherEvent, handler func(data map[string]interface{})) error {

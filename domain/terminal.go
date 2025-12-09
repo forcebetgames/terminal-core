@@ -7,22 +7,25 @@ import (
 )
 
 type Terminal struct {
-	Id       string
-	Name     string
-	Status   string
-	Url      string
-	BaseURL  string
-	UserName string
-	Command  command.Command
-	PublicIp string `json:"ip"`
-	City     string
-	Region   string
-	Country  string
-	Org      string
-	Location string
-	Pin      string
-	Account  string
-	Session  *string
+	Id         string
+	Name       string  // Derivado de UserName
+	Status     string  // Sempre "Ativo" se conectou
+	Url        string  // Configurado via env ou padrão
+	BaseURL    string
+	UserName   string  // user_name do banco
+	Nid        int     // nid do banco
+	Amount     float64 // amount do banco (saldo)
+	FacilityId int     // facility_id do banco
+	Command    command.Command
+	PublicIp   string `json:"ip"`
+	City       string
+	Region     string
+	Country    string
+	Org        string
+	Location   string
+	Pin        string  // Pode ser configurado via env
+	Account    string
+	Session    *string
 }
 
 func (t Terminal) Slug() string {

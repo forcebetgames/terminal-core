@@ -1,7 +1,7 @@
 package domain
 
 import (
-	"fmt"
+	"terminal/logger"
 	"sync"
 	"terminal/domain/keyboard"
 	"time"
@@ -28,19 +28,20 @@ func NewPaymentCash(callback func(brlCount int), inputHandler keyboard.InputHand
 
 // Start listens for key events and handles the timeout logic.
 func (p *PaymentCash) Start() {
-	fmt.Println("💰 Sistema de pagamento iniciado")
-	fmt.Println("📌 Registrando hooks para teclas de dinheiro...")
+	logger.Println("💰 Sistema de pagamento iniciado")
+	logger.Println("📌 Registrando hooks para teclas de dinheiro...")
 
+	// Start listens for key events and handles the timeout logic.
 	// Registra AMBAS versões: teclas normais E numpad
-	p.ListenNote(2, "2", "kp_2")      // Tecla 2 normal + Numpad 2
-	p.ListenNote(5, "3", "kp_3")      // Tecla 3 normal + Numpad 3
-	p.ListenNote(10, "4", "kp_4")     // Tecla 4 normal + Numpad 4
-	p.ListenNote(20, "5", "kp_5")     // Tecla 5 normal + Numpad 5
-	p.ListenNote(50, "6", "kp_6")     // Tecla 6 normal + Numpad 6
-	p.ListenNote(100, "7", "kp_7")    // Tecla 7 normal + Numpad 7
+	p.ListenNote(2, "2", "kp_2")      // Tecla 2 normal + Numpad 2 → R$ 2
+	p.ListenNote(5, "3", "kp_3")      // Tecla 3 normal + Numpad 3 → R$ 5
+	p.ListenNote(10, "4", "kp_4")     // Tecla 4 normal + Numpad 4 → R$ 10
+	p.ListenNote(20, "5", "kp_5")     // Tecla 5 normal + Numpad 5 → R$ 20
+	p.ListenNote(50, "6", "kp_6")     // Tecla 6 normal + Numpad 6 → R$ 50
+	p.ListenNote(100, "7", "kp_7")    // Tecla 7 normal + Numpad 7 → R$ 100
 
-	fmt.Println("✅ Hooks de pagamento registrados!")
-	fmt.Println("💡 Pressione teclas 2-7 (normais OU numpad) para inserir dinheiro")
+	logger.Println("✅ Hooks de pagamento registrados!")
+	logger.Println("💡 Pressione teclas 2-7 (normais OU numpad) para inserir dinheiro")
 }
 
 func (p *PaymentCash) ListenNote(amount int, keys ...string) {
@@ -49,32 +50,33 @@ func (p *PaymentCash) ListenNote(amount int, keys ...string) {
 		currentKey := e.Key
 		currentAmount := amount
 
-		fmt.Println("====================================")
-		fmt.Printf("🔍 DEBUG - Tecla capturada:\n")
-		fmt.Printf("   Tecla: %s\n", currentKey)
-		fmt.Printf("   Rawcode: %d\n", e.Rawcode)
-		fmt.Printf("   Valor: R$ %d\n", currentAmount)
+		logger.Println("====================================")
+		logger.Printf("🔍 DEBUG - Tecla capturada:\n")
+		logger.Printf("   Tecla: %s\n", currentKey)
+		logger.Printf("   Rawcode: %d\n", e.Rawcode)
+		logger.Printf("   Valor: R$ %d\n", currentAmount)
 
 		// Debounce - Prevenir múltiplos disparos em curto período
+		// Aumentado para 500ms para evitar eventos duplicados de hardware customizado
 		p.mu.Lock()
 		lastTime, exists := p.lastEventTime[currentKey]
 		now := time.Now()
-		if exists && now.Sub(lastTime) < 200*time.Millisecond {
+		if exists && now.Sub(lastTime) < 500*time.Millisecond {
 			p.mu.Unlock()
-			fmt.Printf("   ⏱️  REJEITADO: Debounce ativo (última tecla há %dms)\n", now.Sub(lastTime).Milliseconds())
-			fmt.Println("====================================")
+			logger.Printf("   ⏱️  REJEITADO: Debounce ativo (última tecla há %dms)\n", now.Sub(lastTime).Milliseconds())
+			logger.Println("====================================")
 			return
 		}
 		p.lastEventTime[currentKey] = now
 		p.mu.Unlock()
 
-		fmt.Println("====================================")
-		fmt.Printf("✅ VÁLIDO - Inserindo R$ %d...\n", currentAmount)
+		logger.Println("====================================")
+		logger.Printf("✅ VÁLIDO - Inserindo R$ %d...\n", currentAmount)
 
 		if p.Callback != nil {
 			go p.Callback(currentAmount)
 		}
 	})
 
-	fmt.Printf("   ✅ Registrado: R$ %d → teclas %v\n", amount, keys)
+	logger.Printf("   ✅ Registrado: R$ %d → teclas %v\n", amount, keys)
 }

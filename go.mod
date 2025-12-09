@@ -11,9 +11,10 @@ require (
 	github.com/chromedp/chromedp v0.10.0
 	github.com/denisbrodbeck/machineid v1.0.1
 	github.com/go-sql-driver/mysql v1.8.1
+	github.com/gvalkov/golang-evdev v0.0.0-20220815104727-7e27d6ce89b6
 	github.com/joho/godotenv v1.5.1
 	github.com/pusher/pusher-http-go/v5 v5.1.1
-	github.com/robotn/gohook v0.42.2
+	github.com/robotn/gohook v0.42.3
 )
 
 require (
@@ -33,7 +34,6 @@ require (
 	github.com/go-text/typesetting v0.2.1 // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/gvalkov/golang-evdev v0.0.0-20220815104727-7e27d6ce89b6 // indirect
 	github.com/hack-pad/go-indexeddb v0.3.2 // indirect
 	github.com/hack-pad/safejs v0.1.0 // indirect
 	github.com/jeandeaual/go-locale v0.0.0-20241217141322-fcc2cadd6f08 // indirect

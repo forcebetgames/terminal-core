@@ -1,0 +1,245 @@
+====================================
+🎮 TERMINAL DE JOGOS - FORCEBET
+====================================
+
+Iniciando o sistema...
+🖥️  Display Server: WAYLAND
+🌊 Detectando resolução no Wayland...
+   Tentando xrandr via XWayland...
+   ✓ Monitor eDP-1: 1366x768 (xrandr)
+✅ Resolução detectada: 1366x768
+📐 Orientação: HORIZONTAL (landscape)
+📐 Modo: HORIZONTAL (Landscape) - 1366x768
+🎯 Jogo: Empire 🏛️
+
+====================================
+Se conectando ao banco de dados de prod 
+Pegando a numeração do terminal...
+====================================
+🔍 DEBUG - Machine ID detectado: a6b927153639449186816d01064b7d7f
+====================================
+📊 Executando query:
+SELECT id, user_name, pin, name, amount, status, IFNULL(url, ?), nid, facility_id, session_id FROM trm_terminal WHERE id = ?
+📊 Parâmetros: safe_url='https://google.com', machineId='a6b927153639449186816d01064b7d7f'
+====================================
+📊 DEBUG - Dados do Terminal:
+  ID (Machine ID): a6b927153639449186816d01064b7d7f
+  Nome: Terminal Dev 001
+  Username: terminal001
+  NID: 999
+  Saldo: R$ 40940.80
+  Facility ID: 1
+  Status: Ativo
+  URL: https://dashboard.forcebetgames.com
+  PIN: 1234
+  Session ID: CASH_f68ff7ae-a851-4642-83d2-e34995af12f3
+====================================
+Validando o terminal
+Estabelecendo comunicação
+====================================
+🌐 DEBUG - URLs Construídas:
+  URL Base: https://dashboard.forcebetgames.com
+  URL Final (com login): https://dashboard.forcebetgames.com/go-login?user_name=terminal001&pin=1234
+====================================
+🚀 Abrindo navegador Chromium...
+====================================
+====================================
+✅ Navegador aberto com sucesso!
+====================================
+🎹 Inicializando sistema de input...
+🖥️  Display Server detectado: wayland
+🌊 Usando modo WAYLAND (evdev)
+⚠️  IMPORTANTE: Execute com sudo se houver erros de permissão!
+✅ Teclado detectado: AT Translated Set 2 keyboard (/dev/input/event2)
+====================================
+📌 Registrando atalhos de teclado...
+====================================
+🔢 NumLock: DESABILITADO (sessão CASH)
+====================================
+⌨️  Atalhos de teclado disponíveis:
+  Y - Abrir modal de depósito
+  G - Ir para home/jogos
+  J - Abrir modal de saque
+  F - Fechar programa
+
+🎮 CONTROLES DO JOGO:
+  + (=) - Aumentar aposta
+  -     - Diminuir aposta
+  G ou ↑ ou O - Mudar jogo
+  SPACE - Iniciar/Girar jogo
+
+💰 TECLAS DE DINHEIRO (aceita AMBAS - teclas normais OU numpad):
+  2 ou Numpad 2  → R$ 2
+  3 ou Numpad 3  → R$ 5
+  4 ou Numpad 4  → R$ 10
+  5 ou Numpad 5  → R$ 20
+  6 ou Numpad 6  → R$ 50
+  7 ou Numpad 7  → R$ 100
+====================================
+🔌 Conectando ao Pusher (websocket)...
+✅ Pusher conectado!
+====================================
+💰 Sistema de pagamento iniciado
+📌 Registrando hooks para teclas de dinheiro...
+   ✅ Registrado: R$ 2 → teclas [2 kp_2]
+   ✅ Registrado: R$ 5 → teclas [3 kp_3]
+   ✅ Registrado: R$ 10 → teclas [4 kp_4]
+   ✅ Registrado: R$ 20 → teclas [5 kp_5]
+   ✅ Registrado: R$ 50 → teclas [6 kp_6]
+   ✅ Registrado: R$ 100 → teclas [7 kp_7]
+✅ Hooks de pagamento registrados!
+💡 Pressione teclas 2-7 (normais OU numpad) para inserir dinheiro
+🎧 Iniciando escuta de eventos evdev (Wayland)...
+====================================
+
+🎮 SISTEMA PRONTO!
+Pressione Ctrl+C para encerrar
+
+💡 Tente pressionar teclas 2-7 ou Numpad 2-7
+   Você verá logs detalhados no console!
+
+====================================
+====================================
+⌨️  TECLA CAPTURADA (Wayland/evdev):
+   Dispositivo: AT Translated Set 2 keyboard
+   Keycode evdev: 3
+   Key mapeada: '2'
+   Event type: 1, Value: 1
+====================================
+🔔 Executando 1 callback(s) para tecla '2'
+====================================
+🔍 DEBUG - Tecla capturada:
+   Tecla: 2
+   Rawcode: 3
+   Valor: R$ 2
+====================================
+✅ VÁLIDO - Inserindo R$ 2...
+====================================
+🚀 CALLBACK EXECUTADO - Valor: R$ 2
+====================================
+📡 Enviando POST para: https://dashboard.forcebetgames.com/api/hooks/pnr/deposit_cash
+📦 Payload: {"amount":2,"notas":{"2":1},"terminalId":"a6b927153639449186816d01064b7d7f"}
+📥 Status HTTP: 200
+📥 Resposta do servidor: {}
+✅ Pagamento enviado com sucesso!
+====================================
+====================================
+⌨️  TECLA CAPTURADA (Wayland/evdev):
+   Dispositivo: AT Translated Set 2 keyboard
+   Keycode evdev: 4
+   Key mapeada: '3'
+   Event type: 1, Value: 1
+====================================
+🔔 Executando 1 callback(s) para tecla '3'
+====================================
+🔍 DEBUG - Tecla capturada:
+   Tecla: 3
+   Rawcode: 4
+   Valor: R$ 5
+====================================
+✅ VÁLIDO - Inserindo R$ 5...
+====================================
+🚀 CALLBACK EXECUTADO - Valor: R$ 5
+====================================
+📡 Enviando POST para: https://dashboard.forcebetgames.com/api/hooks/pnr/deposit_cash
+📦 Payload: {"amount":5,"notas":{"5":1},"terminalId":"a6b927153639449186816d01064b7d7f"}
+📥 Status HTTP: 200
+📥 Resposta do servidor: {}
+✅ Pagamento enviado com sucesso!
+====================================
+====================================
+⌨️  TECLA CAPTURADA (Wayland/evdev):
+   Dispositivo: AT Translated Set 2 keyboard
+   Keycode evdev: 5
+   Key mapeada: '4'
+   Event type: 1, Value: 1
+====================================
+🔔 Executando 1 callback(s) para tecla '4'
+====================================
+🔍 DEBUG - Tecla capturada:
+   Tecla: 4
+   Rawcode: 5
+   Valor: R$ 10
+====================================
+✅ VÁLIDO - Inserindo R$ 10...
+====================================
+🚀 CALLBACK EXECUTADO - Valor: R$ 10
+====================================
+📡 Enviando POST para: https://dashboard.forcebetgames.com/api/hooks/pnr/deposit_cash
+📦 Payload: {"amount":10,"notas":{"10":1},"terminalId":"a6b927153639449186816d01064b7d7f"}
+📥 Status HTTP: 200
+📥 Resposta do servidor: {}
+✅ Pagamento enviado com sucesso!
+====================================
+====================================
+⌨️  TECLA CAPTURADA (Wayland/evdev):
+   Dispositivo: AT Translated Set 2 keyboard
+   Keycode evdev: 6
+   Key mapeada: '5'
+   Event type: 1, Value: 1
+====================================
+🔔 Executando 1 callback(s) para tecla '5'
+====================================
+🔍 DEBUG - Tecla capturada:
+   Tecla: 5
+   Rawcode: 6
+   Valor: R$ 20
+====================================
+✅ VÁLIDO - Inserindo R$ 20...
+====================================
+🚀 CALLBACK EXECUTADO - Valor: R$ 20
+====================================
+📡 Enviando POST para: https://dashboard.forcebetgames.com/api/hooks/pnr/deposit_cash
+📦 Payload: {"amount":20,"notas":{"20":1},"terminalId":"a6b927153639449186816d01064b7d7f"}
+📥 Status HTTP: 200
+📥 Resposta do servidor: {}
+✅ Pagamento enviado com sucesso!
+====================================
+====================================
+⌨️  TECLA CAPTURADA (Wayland/evdev):
+   Dispositivo: AT Translated Set 2 keyboard
+   Keycode evdev: 7
+   Key mapeada: '6'
+   Event type: 1, Value: 1
+====================================
+🔔 Executando 1 callback(s) para tecla '6'
+====================================
+🔍 DEBUG - Tecla capturada:
+   Tecla: 6
+   Rawcode: 7
+   Valor: R$ 50
+====================================
+✅ VÁLIDO - Inserindo R$ 50...
+====================================
+🚀 CALLBACK EXECUTADO - Valor: R$ 50
+====================================
+📡 Enviando POST para: https://dashboard.forcebetgames.com/api/hooks/pnr/deposit_cash
+📦 Payload: {"amount":50,"notas":{"50":1},"terminalId":"a6b927153639449186816d01064b7d7f"}
+📥 Status HTTP: 200
+📥 Resposta do servidor: {}
+✅ Pagamento enviado com sucesso!
+====================================
+====================================
+⌨️  TECLA CAPTURADA (Wayland/evdev):
+   Dispositivo: AT Translated Set 2 keyboard
+   Keycode evdev: 8
+   Key mapeada: '7'
+   Event type: 1, Value: 1
+====================================
+🔔 Executando 1 callback(s) para tecla '7'
+====================================
+🔍 DEBUG - Tecla capturada:
+   Tecla: 7
+   Rawcode: 8
+   Valor: R$ 100
+====================================
+✅ VÁLIDO - Inserindo R$ 100...
+====================================
+🚀 CALLBACK EXECUTADO - Valor: R$ 100
+====================================
+📡 Enviando POST para: https://dashboard.forcebetgames.com/api/hooks/pnr/deposit_cash
+📦 Payload: {"amount":100,"notas":{"100":1},"terminalId":"a6b927153639449186816d01064b7d7f"}
+📥 Status HTTP: 200
+📥 Resposta do servidor: {}
+✅ Pagamento enviado com sucesso!
+====================================

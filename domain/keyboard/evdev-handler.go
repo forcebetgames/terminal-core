@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"terminal/logger"
 	"time"
 
 	evdev "github.com/gvalkov/golang-evdev"
@@ -44,13 +45,15 @@ func NewEvdevInputHandler() (*EvdevInputHandler, error) {
 func makeKeyCodeMap() map[uint16]string {
 	return map[uint16]string{
 		// Regular number keys (top row)
-		3:  "2",
-		4:  "3",
-		5:  "4",
-		6:  "5",
-		7:  "6",
-		8:  "7",
+		2: "1",
+		3: "2",
+		4: "3",
+		5: "4",
+		6: "5",
+		7: "6",
+		8: "7",
 		// Numpad keys
+		79: "kp_1",
 		80: "kp_2",
 		81: "kp_3",
 		82: "kp_4",
@@ -58,10 +61,19 @@ func makeKeyCodeMap() map[uint16]string {
 		84: "kp_6",
 		85: "kp_7",
 		// Command keys
-		21: "y", // Y key - Deposit modal
+		21: "y", // Y key - PIX (botão físico customizado - keycode 21)
 		34: "g", // G key - Go to home
-		36: "j", // J key - Withdrawal modal
+		36: "j", // J key - Withdrawal modal (SACAR)
+		19: "r", // R key - Confirm withdrawal (CONFIRMAR SAQUE)
+		48: "b", // B key - Report (RELATORIO)
 		33: "f", // F key - Close program
+		// Game controls
+		13:  "=",     // Equal/Plus key - Increase bet
+		12:  "-",     // Minus key - Decrease bet
+		57:  " ",     // Space - Start game
+		103: "up",    // Up arrow - Change game
+		24:  "o",     // O key - Change game alternative
+		125: "super", // Super/Windows key
 	}
 }
 
@@ -110,7 +122,7 @@ func (e *EvdevInputHandler) findKeyboards() error {
 		if isKeyboard {
 			e.devices = append(e.devices, dev)
 			foundKeyboard = true
-			fmt.Printf("✅ Teclado detectado: %s (%s)\n", dev.Name, devicePath)
+			logger.Printf("✅ Teclado detectado: %s (%s)\n", dev.Name, devicePath)
 		} else {
 			dev.File.Close()
 		}
@@ -135,7 +147,7 @@ func (e *EvdevInputHandler) RegisterKeyDown(keys []string, callback func(Event))
 
 // StartListening starts listening for keyboard events
 func (e *EvdevInputHandler) StartListening() {
-	fmt.Println("🎧 Iniciando escuta de eventos evdev (Wayland)...")
+	logger.Println("🎧 Iniciando escuta de eventos evdev (Wayland)...")
 
 	for _, dev := range e.devices {
 		go e.listenDevice(dev)
@@ -176,21 +188,28 @@ func (e *EvdevInputHandler) handleKeyEvent(event evdev.InputEvent, deviceName st
 		return
 	}
 
-	// Debounce: prevent multiple events within 200ms
+	// Debounce: prevent multiple events within 500ms
+	// Aumentado para 500ms para evitar eventos duplicados de hardware customizado
 	e.mu.Lock()
 	lastTime, exists := e.lastEventTime[keyName]
 	now := time.Now()
-	if exists && now.Sub(lastTime) < 200*time.Millisecond {
+	if exists && now.Sub(lastTime) < 500*time.Millisecond {
 		e.mu.Unlock()
-		fmt.Printf("⏱️  IGNORADO - Debounce: tecla '%s' (keycode %d) de '%s' há %dms\n",
+		logger.Printf("⏱️  IGNORADO - Debounce: tecla '%s' (keycode %d) de '%s' há %dms\n",
 			keyName, keyCode, deviceName, now.Sub(lastTime).Milliseconds())
 		return
 	}
 	e.lastEventTime[keyName] = now
 	e.mu.Unlock()
 
-	// Debug: mostrar tecla capturada COM NOME DO DISPOSITIVO
-	fmt.Printf("⌨️  TECLA CAPTURADA: '%s' (keycode: %d) de dispositivo: '%s'\n", keyName, keyCode, deviceName)
+	// Debug: show captured key with DETAILED info
+	logger.Println("====================================")
+	logger.Printf("⌨️  TECLA CAPTURADA (Wayland/evdev):\n")
+	logger.Printf("   Dispositivo: %s\n", deviceName)
+	logger.Printf("   Keycode evdev: %d\n", keyCode)
+	logger.Printf("   Key mapeada: '%s'\n", keyName)
+	logger.Printf("   Event type: %d, Value: %d\n", event.Type, event.Value)
+	logger.Println("====================================")
 
 	// Create event
 	evt := Event{
@@ -205,18 +224,18 @@ func (e *EvdevInputHandler) handleKeyEvent(event evdev.InputEvent, deviceName st
 	e.mu.RUnlock()
 
 	if exists {
-		fmt.Printf("🔔 Executando %d callback(s) para tecla '%s'\n", len(callbacks), keyName)
+		logger.Printf("🔔 Executando %d callback(s) para tecla '%s'\n", len(callbacks), keyName)
 		for _, callback := range callbacks {
 			go callback(evt)
 		}
 	} else {
-		fmt.Printf("⚠️  Nenhum callback registrado para tecla '%s'\n", keyName)
+		logger.Printf("⚠️  Nenhum callback registrado para tecla '%s'\n", keyName)
 	}
 }
 
 // SimulateKeyPress simulates a key press (for testing)
 func (e *EvdevInputHandler) SimulateKeyPress(key string) {
-	fmt.Printf("⌨️  Simulando pressão de tecla: %s (evdev)\n", key)
+	logger.Printf("⌨️  Simulando pressão de tecla: %s (evdev)\n", key)
 	// For testing purposes only
 	evt := Event{
 		Key:     key,
@@ -267,11 +286,11 @@ func DetectDisplayServer() string {
 // NewInputHandler creates the appropriate input handler based on the display server
 func NewInputHandler() (InputHandler, error) {
 	displayServer := DetectDisplayServer()
-	fmt.Printf("🖥️  Display Server detectado: %s\n", displayServer)
+	logger.Printf("🖥️  Display Server detectado: %s\n", displayServer)
 
 	if displayServer == "wayland" {
-		fmt.Println("🌊 Usando modo WAYLAND (evdev)")
-		fmt.Println("⚠️  IMPORTANTE: Execute com sudo se houver erros de permissão!")
+		logger.Println("🌊 Usando modo WAYLAND (evdev)")
+		logger.Println("⚠️  IMPORTANTE: Execute com sudo se houver erros de permissão!")
 		handler, err := NewEvdevInputHandler()
 		if err != nil {
 			return nil, fmt.Errorf("falha ao criar handler evdev: %w", err)
@@ -279,6 +298,6 @@ func NewInputHandler() (InputHandler, error) {
 		return handler, nil
 	}
 
-	fmt.Println("🪟 Usando modo X11 (gohook)")
+	logger.Println("🪟 Usando modo X11 (gohook)")
 	return NewRealInputHandler(), nil
 }

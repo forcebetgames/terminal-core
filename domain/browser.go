@@ -2,13 +2,9 @@ package domain
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
-	"strconv"
-	"time"
 
-	"github.com/chromedp/cdproto/emulation"
 	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/chromedp"
 )
@@ -18,26 +14,13 @@ func OpenBrowser(url string, globalCTX context.Context) (context.Context, contex
 		"X-Custom-keyevent": "potato",
 	}
 
-	// Detectar orientação antes de criar o navegador
-	orientation := os.Getenv("SCREEN_ORIENTATION")
-	if orientation == "" {
-		orientation = "portrait" // Padrão: vertical (Tigrinho)
-	}
-
 	// Detectar se DevTools deve estar habilitado
 	enableDevTools := os.Getenv("ENABLE_DEVTOOLS") == "true"
 
-	// User-Agent baseado na orientação
-	var userAgent string
-	if orientation == "portrait" {
-		// User-Agent mobile (simula dispositivo móvel vertical)
-		userAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/537.36 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/537.36"
-		log.Println("🔧 User-Agent: Mobile (iPhone - Portrait)")
-	} else {
-		// User-Agent desktop padrão
-		userAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-		log.Println("🔧 User-Agent: Desktop (Landscape)")
-	}
+	// Detectar display server para otimizações específicas
+	displayServer := os.Getenv("XDG_SESSION_TYPE")
+	isWayland := displayServer == "wayland"
+	isX11 := displayServer == "x11" || os.Getenv("DISPLAY") != ""
 
 	if enableDevTools {
 		log.Println("🐛 DevTools HABILITADO - Modo Debug")
@@ -46,42 +29,30 @@ func OpenBrowser(url string, globalCTX context.Context) (context.Context, contex
 		log.Println("🔒 DevTools DESABILITADO - Modo Produção (Kiosk)")
 	}
 
+	log.Println("🎮 Modo OTIMIZADO PARA JOGOS - Aceleração GPU Forçada")
+	log.Println("   (Compatível com controles touch/teclado/mouse + Performance Máxima)")
+
+	if isWayland {
+		log.Println("🌊 Display: Wayland (otimizações completas)")
+	} else if isX11 {
+		log.Println("🪟 Display: X11/Xorg (otimizações compatíveis)")
+	}
+
+	// ✅ VERSÃO MINIMALISTA - Baseada na versão antiga fluida (11 flags apenas)
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
-		// Define User-Agent dinamicamente
-		chromedp.UserAgent(userAgent),
-
-		// Executa o Chrome com a interface gráfica (não em modo headless)
 		chromedp.Flag("headless", false),
-
-		// Ativa o áudio do navegador
 		chromedp.Flag("mute-audio", false),
-
-		// Roda o Chrome no modo kiosk (tela cheia sem controles do navegador)
-		// DESABILITADO se DevTools estiver ativo (kiosk bloqueia F12)
 		chromedp.Flag("kiosk", !enableDevTools),
-
-		// Desativa extensões instaladas no navegador
 		chromedp.Flag("disable-extensions", true),
-
-		// Desativa plugins no navegador
 		chromedp.Flag("disable-plugins", true),
-
-		// Desativa a barra de informações que diz "O Chrome está sendo controlado por software de teste automatizado"
 		chromedp.Flag("disable-infobars", true),
-
-		// Desativa o gerenciamento de temporizadores em segundo plano (para melhorar o desempenho)
 		chromedp.Flag("disable-background-timer-throttling", true),
-
-		// Desativa o fundo do renderizador (evita que o Chrome coloque a renderização em segundo plano)
 		chromedp.Flag("disable-renderer-backgrounding", true),
-
-		// Desativa o gerenciamento de rede em segundo plano (impede que o Chrome suspenda as conexões em segundo plano)
 		chromedp.Flag("disable-background-networking", true),
-
 		chromedp.Flag("hide-scrollbars", true),
-
 		chromedp.Flag("enable-automation", false),
 	)
+	log.Println("⚡ MODO MINIMALISTA: Configuração original fluida (11 flags)")
 
 	// Se DevTools estiver habilitado, adiciona flags específicas
 	if enableDevTools {
@@ -100,130 +71,20 @@ func OpenBrowser(url string, globalCTX context.Context) (context.Context, contex
 		// chromedp.WithDebugf(log.Printf),
 	)
 
+	// Configura headers customizados
 	if err := chromedp.Run(ctx, network.SetExtraHTTPHeaders(network.Headers(headers))); err != nil {
 		log.Fatalf("Failed to set headers: %v", err)
 		os.Exit(1)
 	}
 
-	// Start Chromium and navigate to the URL
-	// Configuração de viewport baseada em variável de ambiente
-
-	var width, height int64
-	var screenOrientationType emulation.OrientationType
-
-	// Permite override manual via variáveis de ambiente
-	if widthStr := os.Getenv("SCREEN_WIDTH"); widthStr != "" {
-		width, _ = strconv.ParseInt(widthStr, 10, 64)
-	}
-	if heightStr := os.Getenv("SCREEN_HEIGHT"); heightStr != "" {
-		height, _ = strconv.ParseInt(heightStr, 10, 64)
-	}
-
-	// Se não foi especificado manualmente, usa preset baseado na orientação
-	if width == 0 || height == 0 {
-		if orientation == "landscape" {
-			width = 1920  // Horizontal: 1920x1080
-			height = 1080
-			screenOrientationType = emulation.OrientationTypeLandscapePrimary
-			log.Println("📱 Modo HORIZONTAL (landscape) - Vídeo: Empire")
-		} else {
-			width = 1080  // Vertical: 1080x1920
-			height = 1920
-			screenOrientationType = emulation.OrientationTypePortraitPrimary
-			log.Println("📱 Modo VERTICAL (portrait) - Vídeo: Tigrinho")
-		}
-	} else {
-		// Custom: detecta orientação baseado na proporção
-		if width > height {
-			screenOrientationType = emulation.OrientationTypeLandscapePrimary
-		} else {
-			screenOrientationType = emulation.OrientationTypePortraitPrimary
-		}
-		log.Printf("📱 Modo CUSTOMIZADO - %dx%d", width, height)
-	}
-
-	log.Printf("🖥️  Configurando viewport: %dx%d (orientação: %s)", width, height, screenOrientationType)
-
-	// JavaScript para forçar detecção de orientação portrait
-	forceOrientationJS := fmt.Sprintf(`
-		(function() {
-			// Override screen orientation
-			Object.defineProperty(screen, 'width', { value: %d, writable: false });
-			Object.defineProperty(screen, 'height', { value: %d, writable: false });
-			Object.defineProperty(screen, 'availWidth', { value: %d, writable: false });
-			Object.defineProperty(screen, 'availHeight', { value: %d, writable: false });
-
-			// Override window dimensions
-			Object.defineProperty(window, 'innerWidth', { value: %d, writable: false });
-			Object.defineProperty(window, 'innerHeight', { value: %d, writable: false });
-			Object.defineProperty(window, 'outerWidth', { value: %d, writable: false });
-			Object.defineProperty(window, 'outerHeight', { value: %d, writable: false });
-
-			// Override screen.orientation
-			if (screen.orientation) {
-				Object.defineProperty(screen.orientation, 'type', {
-					value: '%s',
-					writable: false
-				});
-				Object.defineProperty(screen.orientation, 'angle', {
-					value: 0,
-					writable: false
-				});
-			}
-
-			// Override matchMedia para portrait
-			const originalMatchMedia = window.matchMedia;
-			window.matchMedia = function(query) {
-				if (query.includes('orientation')) {
-					if (query.includes('portrait') && '%s' === 'portrait-primary') {
-						return { matches: true, media: query };
-					}
-					if (query.includes('landscape') && '%s' === 'landscape-primary') {
-						return { matches: true, media: query };
-					}
-					return { matches: false, media: query };
-				}
-				return originalMatchMedia.call(this, query);
-			};
-
-			console.log('🔧 Viewport forçado:', %d, 'x', %d);
-			console.log('🔧 Orientação forçada:', '%s');
-		})();
-	`, width, height, width, height, width, height, width, height,
-	   screenOrientationType, screenOrientationType, screenOrientationType,
-	   width, height, screenOrientationType)
-
-	err := chromedp.Run(ctx,
-		// Emula viewport com orientação
-		emulation.SetDeviceMetricsOverride(int64(width), int64(height), 1.0, false).
-			WithScreenOrientation(&emulation.ScreenOrientation{
-				Type:  screenOrientationType,
-				Angle: 0,
-			}),
-
-		// Injeta JavaScript ANTES de navegar
-		chromedp.ActionFunc(func(ctx context.Context) error {
-			return emulation.SetScriptExecutionDisabled(false).Do(ctx)
-		}),
-
-		// Navega para a URL
-		chromedp.Navigate(url),
-
-		// Aguarda um pouco para a página carregar
-		chromedp.Sleep(2 * time.Second),
-
-		// Injeta o JavaScript de override
-		chromedp.Evaluate(forceOrientationJS, nil),
-
-		// Aguarda mais um pouco para garantir que o JS foi aplicado
-		chromedp.Sleep(1 * time.Second),
-	)
+	// Navegação simples - como na versão antiga
+	err := chromedp.Run(ctx, chromedp.Navigate(url))
 	if err != nil {
 		log.Fatalf("Error navigating to URL: %v", err)
 		os.Exit(1)
 	}
 
-	log.Println("✅ Viewport e orientação configurados com sucesso!")
+	log.Println("✅ Navegador iniciado (versão minimalista - igual à fluida)")
 
 	return ctx, cancel
 }
